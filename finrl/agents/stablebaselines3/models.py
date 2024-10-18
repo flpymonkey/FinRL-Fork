@@ -20,10 +20,7 @@ from finrl.meta.env_stock_trading.env_stocktrading import StockTradingEnv
 from finrl.meta.preprocessor.preprocessors import data_split
 
 # import the standrd modles form stable baselines
-# MODELS = {"a2c": A2C, "ddpg": DDPG, "td3": TD3, "sac": SAC, "ppo": PPO}
-
-# TODO changed this to use only one model to speed things up
-MODELS = {"ppo": PPO}
+MODELS = {"a2c": A2C, "ddpg": DDPG, "td3": TD3, "sac": SAC, "ppo": PPO}
 
 MODEL_KWARGS = {x: config.__dict__[f"{x.upper()}_PARAMS"] for x in MODELS.keys()}
 
@@ -358,8 +355,7 @@ class DRLEnsembleAgent:
         for i in range(len(trade_data.index.unique())):
             # TODO predicts the next action based on the current observation.
             action, _states = model.predict(trade_obs) 
-            # TODO executes the action in the environment, which internally calculates 
-            # the reward and returns it along with the next observation, a done flag, and other info.
+            # TODO executes the action in the environment, which internally calculates the reward and returns it along with the next observation, a done flag, and other info.
             trade_obs, rewards, dones, info = trade_env.step(action)
             if i == (len(trade_data.index.unique()) - 2):
                 # print(env_test.render())
@@ -452,13 +448,12 @@ class DRLEnsembleAgent:
         timesteps_dict,
     ):
         # Model Parameters
-        # TODO only using PPO
         kwargs = {
-            # "a2c": A2C_model_kwargs,
+            "a2c": A2C_model_kwargs,
             "ppo": PPO_model_kwargs,
-            # "ddpg": DDPG_model_kwargs,
-            # "sac": SAC_model_kwargs,
-            # "td3": TD3_model_kwargs,
+            "ddpg": DDPG_model_kwargs,
+            "sac": SAC_model_kwargs,
+            "td3": TD3_model_kwargs,
         }
         # Model Sharpe Ratios
         model_dct = {k: {"sharpe_list": [], "sharpe": -1} for k in MODELS.keys()}
