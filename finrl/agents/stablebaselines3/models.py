@@ -356,7 +356,10 @@ class DRLEnsembleAgent:
         trade_obs = trade_env.reset()
 
         for i in range(len(trade_data.index.unique())):
-            action, _states = model.predict(trade_obs)
+            # TODO predicts the next action based on the current observation.
+            action, _states = model.predict(trade_obs) 
+            # TODO executes the action in the environment, which internally calculates 
+            # the reward and returns it along with the next observation, a done flag, and other info.
             trade_obs, rewards, dones, info = trade_env.step(action)
             if i == (len(trade_data.index.unique()) - 2):
                 # print(env_test.render())
@@ -449,12 +452,13 @@ class DRLEnsembleAgent:
         timesteps_dict,
     ):
         # Model Parameters
+        # TODO only using PPO
         kwargs = {
-            "a2c": A2C_model_kwargs,
+            # "a2c": A2C_model_kwargs,
             "ppo": PPO_model_kwargs,
-            "ddpg": DDPG_model_kwargs,
-            "sac": SAC_model_kwargs,
-            "td3": TD3_model_kwargs,
+            # "ddpg": DDPG_model_kwargs,
+            # "sac": SAC_model_kwargs,
+            # "td3": TD3_model_kwargs,
         }
         # Model Sharpe Ratios
         model_dct = {k: {"sharpe_list": [], "sharpe": -1} for k in MODELS.keys()}
