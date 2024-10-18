@@ -207,6 +207,9 @@ class FeatureEngineer:
         """
         df = data.copy()
         df = df.sort_values(by=["tic", "date"])
+
+        # TODO https://pypi.org/project/stockstats/
+        # TODOD this is used for actually making the technical indicators
         stock = Sdf.retype(df.copy())
         unique_ticker = stock.tic.unique()
 

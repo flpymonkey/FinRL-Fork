@@ -19,6 +19,7 @@ from finrl import config
 from finrl.meta.env_stock_trading.env_stocktrading import StockTradingEnv
 from finrl.meta.preprocessor.preprocessors import data_split
 
+# import the standrd modles form stable baselines
 MODELS = {"a2c": A2C, "ddpg": DDPG, "td3": TD3, "sac": SAC, "ppo": PPO}
 
 MODEL_KWARGS = {x: config.__dict__[f"{x.upper()}_PARAMS"] for x in MODELS.keys()}
@@ -40,6 +41,11 @@ class TensorboardCallback(BaseCallback):
     def _on_step(self) -> bool:
         try:
             self.logger.record(key="train/reward", value=self.locals["rewards"][0])
+
+            state = self.locals['obs']
+            action = self.locals['actions']
+            print(f"State: {state}, Action: {action}")
+            return True
 
         except BaseException as error:
             try:
@@ -99,6 +105,9 @@ class DRLAgent:
             model_kwargs["action_noise"] = NOISE[model_kwargs["action_noise"]](
                 mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions)
             )
+
+        # TODO: Get the model, where the environbment has already been defined
+        # the model takes actions and recieves rewards directly from the envirnoment
         print(model_kwargs)
         return MODELS[model_name](
             policy=policy,
@@ -225,6 +234,7 @@ class DRLEnsembleAgent:
 
     @staticmethod
     def train_model(model, model_name, tb_log_name, iter_num, total_timesteps=5000):
+        # TODO here we do the actual model learning and save the model output
         model = model.learn(
             total_timesteps=total_timesteps,
             tb_log_name=tb_log_name,
@@ -256,7 +266,7 @@ class DRLEnsembleAgent:
 
     def __init__(
         self,
-        df,
+        df,# TODO Here we are given the otignial stock state space
         train_period,
         val_test_period,
         rebalance_window,
@@ -290,6 +300,8 @@ class DRLEnsembleAgent:
         self.reward_scaling = reward_scaling
         self.state_space = state_space
         self.action_space = action_space
+
+        # TODO pass these in and set them in the environment
         self.tech_indicator_list = tech_indicator_list
         self.print_verbosity = print_verbosity
         self.train_env = None  # defined in train_validation() function
@@ -305,6 +317,8 @@ class DRLEnsembleAgent:
     ):
         """make a prediction based on trained model"""
 
+
+        # TODO Split the data into training and validation data 
         # trading env
         trade_data = data_split(
             self.df,
@@ -378,6 +392,8 @@ class DRLEnsembleAgent:
             iter_num=i,
             total_timesteps=timesteps_dict[model_name],
         )  # 100_000
+
+        # TODO here we define the validation period
         print(
             f"======{model_name} Validation from: ",
             validation_start_date,
@@ -406,6 +422,8 @@ class DRLEnsembleAgent:
                 )
             ]
         )
+
+        # TODO do validation over this period
         val_obs = val_env.reset()
         self.DRL_validation(
             model=model,
@@ -523,6 +541,9 @@ class DRLEnsembleAgent:
             )
             print("turbulence_threshold: ", turbulence_threshold)
 
+
+            # TODO Define the training period for the training environment
+
             # Environment Setup starts
             # training env
             train = data_split(
@@ -551,6 +572,7 @@ class DRLEnsembleAgent:
                 ]
             )
 
+            # TODO next define a validation time range
             validation = data_split(
                 self.df,
                 start=self.unique_trade_date[
@@ -573,6 +595,8 @@ class DRLEnsembleAgent:
             # print("==============Model Training===========")
             # Train Each Model
             for model_name in MODELS.keys():
+
+                # TODO proceed to model training
                 # Train The Model
                 model, sharpe_list, sharpe = self._train_window(
                     model_name,
@@ -613,9 +637,12 @@ class DRLEnsembleAgent:
             # )])
             # Model Selection based on sharpe ratio
             # Same order as MODELS: {"a2c": A2C, "ddpg": DDPG, "td3": TD3, "sac": SAC, "ppo": PPO}
+
+            # TODO here we find the model with the highest sharpe ratio
             sharpes = [model_dct[k]["sharpe"] for k in MODELS.keys()]
             # Find the model with the highest sharpe ratio
             max_mod = list(MODELS.keys())[np.argmax(sharpes)]
+            
             model_use.append(max_mod.upper())
             model_ensemble = model_dct[max_mod]["model"]
             # Training and Validation ends

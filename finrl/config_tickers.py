@@ -37,6 +37,13 @@ DOW_30_TICKER = [
     "DOW",
 ]
 
+TEST_TICKER = [
+    "AXP",
+    "AMGN",
+    "AAPL",
+    "BA"
+]
+
 # Nasdaq 100 constituents at 2019/01
 NAS_100_TICKER = [
     "AMGN",
