@@ -29,9 +29,6 @@ NOISE = {
     "ornstein_uhlenbeck": OrnsteinUhlenbeckActionNoise,
 }
 
-SEED = 1
-
-
 class TensorboardCallback(BaseCallback):
     """
     Custom callback for plotting additional values in tensorboard.
@@ -91,7 +88,7 @@ class DRLAgent:
         policy_kwargs=None,
         model_kwargs=None,
         verbose=1,
-        seed=SEED,
+        seed=None,
         tensorboard_log=None,
     ):
         if model_name not in MODELS:
