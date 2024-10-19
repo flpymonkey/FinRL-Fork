@@ -29,6 +29,8 @@ NOISE = {
     "ornstein_uhlenbeck": OrnsteinUhlenbeckActionNoise,
 }
 
+SEED = 1
+
 
 class TensorboardCallback(BaseCallback):
     """
@@ -89,7 +91,7 @@ class DRLAgent:
         policy_kwargs=None,
         model_kwargs=None,
         verbose=1,
-        seed=None,
+        seed=SEED,
         tensorboard_log=None,
     ):
         if model_name not in MODELS:
