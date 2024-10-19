@@ -376,6 +376,7 @@ class DRLEnsembleAgent:
         i,
         validation,
         turbulence_threshold,
+        seed = None
     ):
         """
         Train the model for a single window.
@@ -385,8 +386,10 @@ class DRLEnsembleAgent:
 
         print(f"======{model_name} Training========")
         model = self.get_model(
-            model_name, self.train_env, policy="MlpPolicy", model_kwargs=model_kwargs
+            model_name, self.train_env, policy="MlpPolicy",seed=seed, model_kwargs=model_kwargs
         )
+
+        # TODO Here we have the trained model
         model = self.train_model(
             model,
             model_name,
@@ -446,6 +449,7 @@ class DRLEnsembleAgent:
         SAC_model_kwargs,
         TD3_model_kwargs,
         timesteps_dict,
+        seed=None,
     ):
         # Model Parameters
         kwargs = {
@@ -610,6 +614,7 @@ class DRLEnsembleAgent:
                     i,
                     validation,
                     turbulence_threshold,
+                    seed,
                 )
                 # Save the model's sharpe ratios, and the model itself
                 model_dct[model_name]["sharpe_list"] = sharpe_list
@@ -650,6 +655,7 @@ class DRLEnsembleAgent:
             # Training and Validation ends
 
             # Trading starts
+            # TODO test on future trading window
             print(
                 "======Trading from: ",
                 self.unique_trade_date[i - self.rebalance_window],

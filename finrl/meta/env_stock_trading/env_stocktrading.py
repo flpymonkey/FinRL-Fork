@@ -247,6 +247,9 @@ class StockTradingEnv(gym.Env):
                 1
             )
             if df_total_value["daily_return"].std() != 0:
+
+                # TODO is this a valid way to calculte the sharpe ratio?????????????????
+                # What about using the risk free rat here?
                 sharpe = (
                     (252**0.5)
                     * df_total_value["daily_return"].mean()
