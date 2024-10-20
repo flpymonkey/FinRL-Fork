@@ -37,6 +37,8 @@ def convert_daily_return_to_pyfolio_ts(df):
 
 def backtest_stats(account_value, value_col_name="account_value"):
     dr_test = get_daily_return(account_value, value_col_name=value_col_name)
+
+    # TODO make sure to pass in the correct risk free rate here, for sharpe
     perf_stats_all = timeseries.perf_stats(
         returns=dr_test,
         positions=None,
