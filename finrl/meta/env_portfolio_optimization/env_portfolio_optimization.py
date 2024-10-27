@@ -194,6 +194,7 @@ class PortfolioOptimizationEnv(gym.Env):
 
         self._reset_memory()
 
+        self._total_transaction_cost = 0
         self._portfolio_value = self._initial_amount
         self._terminal = False
 
@@ -270,6 +271,7 @@ class PortfolioOptimizationEnv(gym.Env):
                 )
             )
             print("Sharpe ratio: {}".format(qs.stats.sharpe(metrics_df["returns"])))
+            print("Total commission cost: {}".format(self._total_transaction_cost))
             print("=================================")
 
             qs.plots.snapshot(
@@ -304,6 +306,9 @@ class PortfolioOptimizationEnv(gym.Env):
                 self._time_index
             )
 
+
+            # TODO need to iron out these transaction cost modifiers!!!!
+
             # if using weights vector modifier, we need to modify weights vector
             if self._comission_fee_model == "wvm":
                 delta_weights = weights - last_weights
@@ -313,11 +318,15 @@ class PortfolioOptimizationEnv(gym.Env):
                 if fees > weights[0] * self._portfolio_value:
                     weights = last_weights
                     # maybe add negative reward
+                    # TODO add a shrinkage value
                 else:
                     portfolio = weights * self._portfolio_value
                     portfolio[0] -= fees
                     self._portfolio_value = np.sum(portfolio)  # new portfolio value
                     weights = portfolio / self._portfolio_value  # new weights
+
+                    # TODO Expand upon cost
+                    self._total_transaction_cost += fees
             elif self._comission_fee_model == "trf":
                 last_mu = 1
                 mu = 1 - 2 * self._comission_fee_pct + self._comission_fee_pct**2
@@ -330,6 +339,10 @@ class PortfolioOptimizationEnv(gym.Env):
                         * np.sum(np.maximum(last_weights[1:] - mu * weights[1:], 0))
                     ) / (1 - self._comission_fee_pct * weights[0])
                 self._info["trf_mu"] = mu
+
+                # TODO Expand upon cost, calculate the fee
+                self._total_transaction_cost += (self._portfolio_value - mu * self._portfolio_value)
+
                 self._portfolio_value = mu * self._portfolio_value
 
             # save initial portfolio value of this time step
@@ -569,6 +582,7 @@ class PortfolioOptimizationEnv(gym.Env):
             return state
 
     def _normalize_dataframe(self, normalize):
+        # So they transfer this to returns, by normalizing
         """ "Normalizes the environment's dataframe.
 
         Args:
@@ -604,6 +618,9 @@ class PortfolioOptimizationEnv(gym.Env):
             print("No normalization was performed.")
 
     def _temporal_variation_df(self, periods=1):
+
+        # TODO Normalize these prices
+
         """Calculates the temporal variation dataframe. For each feature, this
         dataframe contains the rate of the current feature's value and the last
         feature's value given a period. It's used to normalize the dataframe.

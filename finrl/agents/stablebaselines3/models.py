@@ -85,6 +85,8 @@ class DRLAgent:
         self,
         model_name,
         policy="MlpPolicy",
+        # TODO here we are passing in none for or DRLAgnet models, 
+        # # using the default policy parameters
         policy_kwargs=None,
         model_kwargs=None,
         verbose=1,
@@ -384,6 +386,8 @@ class DRLEnsembleAgent:
             return None, sharpe_list, -1
 
         print(f"======{model_name} Training========")
+
+        # TODO here we are using the default policy keyword arguments
         model = self.get_model(
             model_name, self.train_env, policy="MlpPolicy",seed=seed, model_kwargs=model_kwargs
         )
@@ -602,6 +606,8 @@ class DRLEnsembleAgent:
             for model_name in MODELS.keys():
 
                 # TODO proceed to model training
+
+                # TODO no way to apss in the policy keyword arguments
                 # Train The Model
                 model, sharpe_list, sharpe = self._train_window(
                     model_name,

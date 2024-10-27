@@ -423,6 +423,7 @@ class StockTradingEnv(gym.Env):
     def render(self, mode="human", close=False):
         return self.state
 
+    # TODO why not normalize this price data? Or operate on returns instead??????
     def _initiate_state(self):
         if self.initial:
             # For Initial State

@@ -101,6 +101,7 @@ class StockTradingEnvNoCash(gym.Env):
         # TODO, dont keep track of number of shares here, use portfolio weights instead
         # the initial total asset is calculated by cash + sum (num_share_stock_i * price_stock_i) 
 
+        self.portfolio_return_memory = [0]
         self.rewards_memory = []
         self.actions_memory = []
         self.state_memory = (
@@ -280,6 +281,10 @@ class StockTradingEnvNoCash(gym.Env):
             df_rewards = pd.DataFrame(self.rewards_memory)
             df_rewards.columns = ["account_rewards"]
             df_rewards["date"] = self.date_memory[:-1]
+
+            df_returns = pd.DataFrame(self.portfolio_return_memory)
+            df_returns.columns = ["account_retuens"]
+            df_returns["date"] = self.date_memory[:-1]
             if self.episode % self.print_verbosity == 0:
                 print(f"day: {self.day}, episode: {self.episode}")
                 print(f"begin_total_asset: {self.asset_memory[0]:0.2f}")
@@ -306,6 +311,12 @@ class StockTradingEnvNoCash(gym.Env):
                 )
                 df_rewards.to_csv(
                     "results/account_rewards_{}_{}_{}.csv".format(
+                        self.mode, self.model_name, self.iteration
+                    ),
+                    index=False,
+                )
+                df_returns.to_csv(
+                    "results/account_returns_{}_{}_{}.csv".format(
                         self.mode, self.model_name, self.iteration
                     ),
                     index=False,
@@ -380,6 +391,10 @@ class StockTradingEnvNoCash(gym.Env):
                 np.array(self.state[1 : (self.stock_dim + 1)]) # Prices
                 * np.array(self.state[(self.stock_dim + 1) : (self.stock_dim * 2 + 1)]) # Weights
             )
+
+            portfolio_return_rate = (end_total_asset / begin_total_asset) - 1
+            self.portfolio_return_memory.append(portfolio_return_rate)
+
             self.asset_memory.append(end_total_asset)
             self.date_memory.append(self._get_date())
             self.reward = end_total_asset - begin_total_asset
@@ -426,6 +441,7 @@ class StockTradingEnvNoCash(gym.Env):
         self.trades = 0
         self.terminal = False
         # self.iteration=self.iteration
+        self.portfolio_return_memory = [0]
         self.rewards_memory = []
         self.actions_memory = []
         self.date_memory = [self._get_date()]
