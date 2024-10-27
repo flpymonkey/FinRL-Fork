@@ -406,6 +406,7 @@ class PortfolioOptimizationEnv(gym.Env):
         self._state, self._info = self._get_state_and_info_from_time_index(
             self._time_index
         )
+        self._total_transaction_cost = 0
         self._portfolio_value = self._initial_amount
         self._terminal = False
 
