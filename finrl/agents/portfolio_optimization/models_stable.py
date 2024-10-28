@@ -1,6 +1,8 @@
 from stable_baselines3 import PPO
 
-MODELS = {"ppo": PPO}
+from online import CRPModel
+
+MODELS = {"ppo": PPO, "crp": CRPModel}
 
 class DRLStableAgent:
     """Implementation for DRL algorithms for portfolio optimization.
