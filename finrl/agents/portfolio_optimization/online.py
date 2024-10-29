@@ -269,26 +269,25 @@ class OLMARModel:
         """Predict next price relative."""
         if self.ma_type == "SMA":
             return self.price_history.mean() / self.price_history.iloc[-1, :]
-        else:
+        else: # TODO EMA is doing very poorly, need to check that this is correct
             real_x = self.price_history.iloc[-1, :] / self.price_history.iloc[-2, :]
             price_prediction = self.alpha + (1 - self.alpha) * np.divide(self.price_prediction, real_x)
             self.price_prediction = price_prediction
             return price_prediction
         
-    def updateWeights(self, weights, price_prediction, eps):
+    def updateWeights(self, weights, new_price_prediction, eps):
         """Update portfolio weights to satisfy constraint weights * x >= eps
         and minimize distance to previous weights."""
-        x_pred_mean = np.mean(price_prediction)
-        excess_return = price_prediction - x_pred_mean
+        price_prediction_mean = np.mean(new_price_prediction)
+        excess_return = new_price_prediction - price_prediction_mean
         denominator = (excess_return * excess_return).sum()
         if denominator != 0:
-            lam = max(0.0, (eps - np.dot(weights, price_prediction)) / denominator)
+            lam = max(0.0, (eps - np.dot(weights, new_price_prediction)) / denominator)
         else:
             lam = 0
 
         # update portfolio
         weights = weights + lam * (excess_return)
-
 
         # project it onto simplex
         return simplex_proj(weights)
@@ -326,7 +325,7 @@ class OLMARModel:
 
         # Window is too short, return the starting weights
         if len(self.price_history) < self.window + 1:
-            x_pred = self.price_history.iloc[-1]
+            self.price_prediction = self.price_history.iloc[-1]
 
             # Use the last portfolio as the new action (keep it the same)
             action_weights = np.insert(old_weights, 0, 0)
@@ -339,9 +338,8 @@ class OLMARModel:
             return actions, None
 
         else:
-            x = self.price_history.iloc[-1]
-            x_pred = self.get_price_relative()
-            new_weights = self.updateWeights(old_weights, x_pred, self.eps)
+            self.price_prediction = self.get_price_relative()
+            new_weights = self.updateWeights(old_weights, self.price_prediction, self.eps)
 
             self.current_weights = new_weights
 
@@ -351,7 +349,7 @@ class OLMARModel:
 
             return actions, None
     
-# TODO found this here:  https://github.com/Marigold/universal-portfolios/blob/master/universal/tools.py
+# TODO form the universal protfolio algoirthm
 def simplex_proj(y):
     """Projection of y onto simplex."""
     m = len(y)
