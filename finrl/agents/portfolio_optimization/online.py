@@ -70,6 +70,7 @@ class CRPModel:
         # The state doesnt matter here
         return actions, None
     
+# todo MEASURE THE REGRET
 
 class BAHModel:
     def __init__(
@@ -179,7 +180,7 @@ class BCRPModel:
         # Calculate price ratios 
         price_ratios = pivoted_df / pivoted_df.iloc[0]
         # Get the magic weights
-        self.target_weights = np.array(opt_weights(price_ratios))
+        self.target_weights = np.array(optimize_with_hindsight(price_ratios))
         # Assume no cash
         self.target_weights = np.insert(self.target_weights, 0, 0)
 
@@ -216,7 +217,11 @@ class BCRPModel:
 
         # The state doesnt matter here
         return actions, None
-    
+
+# TODO - momentum type strategies
+
+# TODO - look into regret minimuzation
+
 class OLMARModel:
     def __init__(
             self, 
@@ -373,79 +378,27 @@ def simplex_proj(y):
 
 import scipy.optimize as optimize
 # TODO found this here:  https://github.com/Marigold/universal-portfolios/blob/master/universal/tools.py
-def opt_weights(
-    X,
-    metric="return",
-    max_leverage=1,
-    rf_rate=0.0,
-    alpha=0.0,
-    freq: float = 252,
-    no_cash=False,
-    sd_factor=1.0,
-    **kwargs,
+def optimize_with_hindsight(
+    prices
 ):
-    """Find best constant rebalanced portfolio with regards to some metric.
-    :param X: Prices in ratios.
-    :param metric: what performance metric to optimize, can be either `return` or `sharpe`
-    :max_leverage: maximum leverage
-    :rf_rate: risk-free rate for `sharpe`, can be used to make it more aggressive
-    :alpha: regularization parameter for volatility in sharpe
-    :freq: frequency for sharpe (default 252 for daily data)
-    :no_cash: if True, we can't keep cash (that is sum of weights == max_leverage)
-    """
-    assert metric in ("return", "sharpe", "drawdown", "ulcer")
-    assert X.notnull().all().all()
+    assert prices.notnull().all().all()
 
-    x_0 = max_leverage * np.ones(X.shape[1]) / float(X.shape[1])
-    if metric == "return":
-        objective = lambda b: -np.sum(np.log(np.maximum(np.dot(X - 1, b) + 1, 0.0001)))
-    # elif metric == "sharpe":
-    #     objective = lambda b: -sharpe(
-    #         np.log(np.maximum(np.dot(X - 1, b) + 1, 0.0001)),
-    #         rf_rate=rf_rate,
-    #         alpha=alpha,
-    #         freq=freq,
-    #         sd_factor=sd_factor,
-    #     )
-    elif metric == "drawdown":
+    x_0 = np.ones(prices.shape[1]) / float(prices.shape[1])
+    
+    objective = lambda b: -np.sum(np.log(np.maximum(np.dot(X - 1, b) + 1, 0.0001)))
 
-        def objective(b):
-            R = np.dot(X - 1, b) + 1
-            L = np.cumprod(R)
-            dd = max(1 - L / np.maximum.accumulate(L))
-            annual_ret = np.mean(R) ** freq - 1
-            return -annual_ret / (dd + alpha)
+    cons = ({"type": "eq", "fun": lambda b: 1 - sum(b)},)
 
-    if no_cash:
-        cons = ({"type": "eq", "fun": lambda b: max_leverage - sum(b)},)
-    else:
-        cons = ({"type": "ineq", "fun": lambda b: max_leverage - sum(b)},)
+   
+    # problem optimization
+    res = optimize.minimize(
+        objective,
+        x_0,
+        bounds=[(0.0, 1.0)] * len(x_0),
+        constraints=cons,
+        method="slsqp"
+    )
 
-    while True:
-        # problem optimization
-        res = optimize.minimize(
-            objective,
-            x_0,
-            bounds=[(0.0, max_leverage)] * len(x_0),
-            constraints=cons,
-            method="slsqp",
-            **kwargs,
-        )
-
-        # result can be out-of-bounds -> try it again
-        EPS = 1e-7
-        if (res.x < 0.0 - EPS).any() or (res.x > max_leverage + EPS).any():
-            X = X + np.random.randn(1)[0] * 1e-5
-            print("Optimal weights not found, trying again...")
-            continue
-        elif res.success:
-            break
-        else:
-            if np.isnan(res.x).any():
-                print("Solution does not exist, use zero weights.")
-                res.x = np.zeros(X.shape[1])
-            else:
-                print("Converged, but not successfully.")
-            break
-
-    return res.x
+    if res.success:
+        return res.x
+    raise ValueError("Could not find an optimal value using the BCRP algorithm.")
