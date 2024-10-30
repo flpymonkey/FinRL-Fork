@@ -385,7 +385,7 @@ def optimize_with_hindsight(
 
     x_0 = np.ones(prices.shape[1]) / float(prices.shape[1])
     
-    objective = lambda b: -np.sum(np.log(np.maximum(np.dot(X - 1, b) + 1, 0.0001)))
+    objective = lambda b: -np.sum(np.log(np.maximum(np.dot(prices - 1, b) + 1, 0.0001)))
 
     cons = ({"type": "eq", "fun": lambda b: 1 - sum(b)},)
 
