@@ -275,16 +275,15 @@ class OLMARModel:
         """Update portfolio weights to satisfy constraint weights * x >= eps
         and minimize distance to previous weights."""
         price_prediction_mean = np.mean(new_price_prediction)
-        excess_return = price_prediction_mean - new_price_prediction
+        excess_return = new_price_prediction - price_prediction_mean
         denominator = (excess_return * excess_return).sum()
         if denominator != 0:
-            constraint = ((np.dot(weights, new_price_prediction)) - eps)
-            lam = max(0.0, constraint / denominator)
+            lam = max(0.0, (eps - np.dot(weights, new_price_prediction)) / denominator)
         else:
             lam = 0
 
         # update portfolio
-        weights = weights - lam * (excess_return)
+        weights = weights + lam * (excess_return)
 
         # project it onto simplex
         return simplex_proj(weights)
