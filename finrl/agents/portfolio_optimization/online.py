@@ -232,8 +232,7 @@ class OLMARModel:
             target_weights: List[float] = None, # If none, default to uniform weights
             window=5, 
             eps=10, 
-            alpha=0.5, 
-            ma_type="SMA"  
+            alpha=0.5
             ) -> None:
         
         # Super simple algorithm, we only need the environment
@@ -245,7 +244,6 @@ class OLMARModel:
         self.window = window
         self.eps = eps
         self.alpha = alpha
-        self.ma_type = ma_type # TODO adjust these
 
         # Pull out the actions space dimensions for the portfolio
         self.action_space_shape = self.env.action_space.shape
@@ -269,30 +267,24 @@ class OLMARModel:
         # TODO this model is derministic and doesnt learn anything, it only predicts
         pass
 
-    # TODO need to use price relatives instead
-    def get_price_relative(self):
-        """Predict next price relative."""
-        if self.ma_type == "SMA":
-            return self.price_history.mean() / self.price_history.iloc[-1, :]
-        else: # TODO EMA is doing very poorly, need to check that this is correct
-            real_x = self.price_history.iloc[-1, :] / self.price_history.iloc[-2, :]
-            price_prediction = self.alpha + (1 - self.alpha) * np.divide(self.price_prediction, real_x)
-            self.price_prediction = price_prediction
-            return price_prediction
+    def get_price_relative_SMA(self):
+        """Predict next price relative using SMA."""
+        return self.price_history.mean() / self.price_history.iloc[-1, :]
         
-    def updateWeights(self, weights, new_price_prediction, eps):
+    def update_weights(self, weights, new_price_prediction, eps):
         """Update portfolio weights to satisfy constraint weights * x >= eps
         and minimize distance to previous weights."""
         price_prediction_mean = np.mean(new_price_prediction)
-        excess_return = new_price_prediction - price_prediction_mean
+        excess_return = price_prediction_mean - new_price_prediction
         denominator = (excess_return * excess_return).sum()
         if denominator != 0:
-            lam = max(0.0, (eps - np.dot(weights, new_price_prediction)) / denominator)
+            constraint = ((np.dot(weights, new_price_prediction)) - eps)
+            lam = max(0.0, constraint / denominator)
         else:
             lam = 0
 
         # update portfolio
-        weights = weights + lam * (excess_return)
+        weights = weights - lam * (excess_return)
 
         # project it onto simplex
         return simplex_proj(weights)
@@ -343,8 +335,8 @@ class OLMARModel:
             return actions, None
 
         else:
-            self.price_prediction = self.get_price_relative()
-            new_weights = self.updateWeights(old_weights, self.price_prediction, self.eps)
+            self.price_prediction = self.get_price_relative_SMA()
+            new_weights = self.update_weights(old_weights, self.price_prediction, self.eps)
 
             self.current_weights = new_weights
 
