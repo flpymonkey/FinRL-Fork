@@ -231,8 +231,7 @@ class OLMARModel:
             policy_kwargs: Optional[Dict[str, Any]] = None, # policy_kwargs doesnt matter here
             target_weights: List[float] = None, # If none, default to uniform weights
             window=5, 
-            eps=10, 
-            alpha=0.5
+            eps=10,
             ) -> None:
         
         # Super simple algorithm, we only need the environment
@@ -243,7 +242,6 @@ class OLMARModel:
 
         self.window = window
         self.eps = eps
-        self.alpha = alpha
 
         # Pull out the actions space dimensions for the portfolio
         self.action_space_shape = self.env.action_space.shape
@@ -267,18 +265,18 @@ class OLMARModel:
         # TODO this model is derministic and doesnt learn anything, it only predicts
         pass
 
-    def get_price_relative_SMA(self):
+    def get_price_relative_SMA(self, window_history):
         """Predict next price relative using SMA."""
-        return self.price_history.mean() / self.price_history.iloc[-1, :]
+        return window_history.mean() / window_history.iloc[-1, :]
         
-    def update_weights(self, weights, new_price_prediction, eps):
+    def update_weights(self, weights, new_price_prediction):
         """Update portfolio weights to satisfy constraint weights * x >= eps
         and minimize distance to previous weights."""
         price_prediction_mean = np.mean(new_price_prediction)
         excess_return = new_price_prediction - price_prediction_mean
         denominator = (excess_return * excess_return).sum()
         if denominator != 0:
-            lam = max(0.0, (eps - np.dot(weights, new_price_prediction)) / denominator)
+            lam = max(0.0, (self.eps - np.dot(weights, new_price_prediction)) / denominator)
         else:
             lam = 0
 
@@ -288,8 +286,8 @@ class OLMARModel:
         # project it onto simplex
         return simplex_proj(weights)
 
-    def predict(
-        self,
+# TODO update this code
+    def predict(self,
         observation: Union[np.ndarray, Dict[str, np.ndarray]],
         state: Optional[Tuple[np.ndarray, ...]] = None,
         episode_start: Optional[np.ndarray] = None,
@@ -323,29 +321,22 @@ class OLMARModel:
         if len(self.price_history) < self.window + 1:
             self.price_prediction = self.price_history.iloc[-1]
 
-            # Use the last portfolio as the new action (keep it the same)
-            action_weights = np.insert(old_weights, 0, 0)
-            actions = action_weights.reshape(1, self.portfolio_length)
-
-            # print("Here!!!!!!!")
-            # print(actions)
-
-            # The state doesnt matter here
-            return actions, None
-
         else:
-            self.price_prediction = self.get_price_relative_SMA()
-            new_weights = self.update_weights(old_weights, self.price_prediction, self.eps)
+            window_history = self.price_history.iloc[-self.window :]
+            self.price_prediction = self.get_price_relative_SMA(window_history)
+            
+        new_weights = self.update_weights(old_weights, self.price_prediction)
 
-            self.current_weights = new_weights
+        self.current_weights = new_weights
 
-            # Use the last portfolio as the new action (keep it the same)
-            action_weights = np.insert(new_weights, 0, 0)
-            actions = action_weights.reshape(1, self.portfolio_length)
+        assert np.isclose(self.current_weights.sum(), 1), "The array does not sum up to one."
 
-            return actions, None
-    
-# TODO form the universal protfolio algoirthm
+        # Use the last portfolio as the new action (keep it the same)
+        action_weights = np.insert(new_weights, 0, 0)
+        actions = action_weights.reshape(1, self.portfolio_length)
+
+        return actions, None
+
 def simplex_proj(y):
     """Projection of y onto simplex."""
     m = len(y)
