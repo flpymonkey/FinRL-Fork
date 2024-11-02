@@ -265,7 +265,7 @@ class OLMARModel:
         # TODO this model is derministic and doesnt learn anything, it only predicts
         pass
 
-    def get_price_relative_SMA(self, window_history):
+    def get_SMA(self, window_history):
         """Predict next price relative using SMA."""
         return window_history.mean() / window_history.iloc[-1, :]
         
@@ -316,14 +316,19 @@ class OLMARModel:
         self.price_history = pd.concat([self.price_history, new_row], ignore_index=True)
         old_weights = self.current_weights
 
+        # Normalize the prices
+        r = {}
+        for name, s in self.price_history.items():
+            init_val = s.loc[s.first_valid_index()]
+            r[name] = s / init_val
+        X = pd.DataFrame(r)
 
         # Window is too short, return the starting weights
-        if len(self.price_history) < self.window + 1:
-            self.price_prediction = self.price_history.iloc[-1]
-
+        if len(X) < self.window + 1:
+            self.price_prediction = X.iloc[-1]
         else:
-            window_history = self.price_history.iloc[-self.window :]
-            self.price_prediction = self.get_price_relative_SMA(window_history)
+            window_history = X.iloc[-self.window :]
+            self.price_prediction = self.get_SMA(window_history)
             
         new_weights = self.update_weights(old_weights, self.price_prediction)
 
@@ -337,6 +342,7 @@ class OLMARModel:
 
         return actions, None
 
+# TODO found this here:  https://github.com/Marigold/universal-portfolios/blob/master/universal/tools.py
 def simplex_proj(y):
     """Projection of y onto simplex."""
     m = len(y)
@@ -355,7 +361,7 @@ def simplex_proj(y):
     if not bget:
         tmax = (tmpsum + s[m - 1] - 1) / m
 
-    return np.maximum(y - tmax, 0.0)
+    return np.maximum(y - tmax, 0.0)   
 
 
 import scipy.optimize as optimize
