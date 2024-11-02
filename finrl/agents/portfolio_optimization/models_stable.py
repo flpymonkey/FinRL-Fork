@@ -1,8 +1,15 @@
 from stable_baselines3 import PPO
 
-from .online import CRPModel, BAHModel, BCRPModel, OLMARModel
+from .online import CRPModel, BAHModel, BCRPModel, OLMARModel, RMRModel
 
-MODELS = {"ppo": PPO, "crp": CRPModel, "bah": BAHModel, "bcrp": BCRPModel, "olmar": OLMARModel}
+MODELS = {
+    "ppo": PPO, 
+    "crp": CRPModel, 
+    "bah": BAHModel, 
+    "bcrp": BCRPModel, 
+    "olmar": OLMARModel,
+    "rmr": RMRModel
+}
 
 class DRLStableAgent:
     """Implementation for DRL algorithms for portfolio optimization.

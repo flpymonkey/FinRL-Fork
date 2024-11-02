@@ -342,6 +342,143 @@ class OLMARModel:
 
         return actions, None
 
+
+class RMRModel:
+    def __init__(
+            self, 
+            env: Union[GymEnv, str],
+            policy: Any, # Policy doesnt matter here
+            device: str, # device doesnt matter here
+            policy_kwargs: Optional[Dict[str, Any]] = None, # policy_kwargs doesnt matter here
+            target_weights: List[float] = None, # If none, default to uniform weights
+            window=5, 
+            eps=10,
+            tau=0.001 # L1 Normilization parameter
+            ) -> None:
+        
+        # Super simple algorithm, we only need the environment
+
+        assert env is not None 
+        self.env = env
+
+        self.window = window
+        self.eps = eps
+        self.tau = tau
+
+        # Pull out the actions space dimensions for the portfolio
+        self.action_space_shape = self.env.action_space.shape
+        self.portfolio_length = self.action_space_shape[0]
+
+        # Calculate the inital weights, (defualt to uniform)
+        # Uniform base case
+        # Note these are the first weight reprsents the cash account, which should always be 0
+        self.current_weights = np.ones(self.portfolio_length-1) / (self.portfolio_length-1)  # target weights for each asset
+
+        # For RMR start with uniform and then adjust based on moving averages
+        self.price_history = pd.DataFrame()
+
+    def train(self) -> None:
+        # TODO this model is derministic and doesnt learn anything, it only predicts
+        pass
+
+    def learn(
+        self
+    ):
+        # TODO this model is derministic and doesnt learn anything, it only predicts
+        pass
+
+    def get_price_prediction(self, prices, window_history):
+        """Predict next price relative using SMA."""
+        y = window_history.mean()
+        y_last = None
+        while y_last is None or norm(y - y_last) / norm(y_last) > self.tau:
+            y_last = y
+            d = norm(window_history - y)
+            y = window_history.div(d, axis=0).sum() / (1.0 / d).sum()
+        return y / prices
+        
+    def update_weights(self, weights, new_price_prediction):
+        """Update portfolio weights to satisfy constraint weights * x >= eps
+        and minimize distance to previous weights."""
+        price_prediction_mean = np.mean(new_price_prediction)
+        excess_return = new_price_prediction - price_prediction_mean
+        denominator = (excess_return * excess_return).sum()
+        if denominator != 0:
+            lam = max(0.0, (self.eps - np.dot(weights, new_price_prediction)) / denominator)
+        else:
+            lam = 0
+
+        # update portfolio
+        weights = weights + lam * (excess_return)
+
+        # project it onto simplex
+        return simplex_proj(weights)
+
+# TODO update this code
+    def predict(self,
+        observation: Union[np.ndarray, Dict[str, np.ndarray]],
+        state: Optional[Tuple[np.ndarray, ...]] = None,
+        episode_start: Optional[np.ndarray] = None,
+        deterministic: bool = False, # TODO not needed this is always determininistic
+    ) -> Tuple[np.ndarray, Optional[Tuple[np.ndarray, ...]]]:
+
+        # TODO much of this comes from the policies class in stable baselines
+        if isinstance(observation, tuple) and len(observation) == 2 and isinstance(observation[1], dict):
+            raise ValueError(
+                "You have passed a tuple to the predict() function instead of a Numpy array or a Dict. "
+                "You are probably mixing Gym API with SB3 VecEnv API: `obs, info = env.reset()` (Gym) "
+                "vs `obs = vec_env.reset()` (SB3 VecEnv). "
+                "See related issue https://github.com/DLR-RM/stable-baselines3/issues/1694 "
+                "and documentation for more information: https://stable-baselines3.readthedocs.io/en/master/guide/vec_envs.html#vecenv-api-vs-gym-api"
+            )
+
+        # Reshape the array to remove single dimensions 
+        reshaped_array = observation.reshape(len(self.env._features), self.portfolio_length - 1) 
+
+        # TODO this code his horrible Extract the three lists
+        prices = reshaped_array[0].tolist()
+
+        new_row = pd.DataFrame([prices])
+
+        # Add to the price history
+        self.price_history = pd.concat([self.price_history, new_row], ignore_index=True)
+        old_weights = self.current_weights
+
+        # Normalize the prices
+        r = {}
+        for name, s in self.price_history.items():
+            init_val = s.loc[s.first_valid_index()]
+            r[name] = s / init_val
+        X = pd.DataFrame(r)
+
+        current_prices = X.iloc[-1]
+
+        # Window is too short, return the starting weights
+        if len(X) < self.window + 1:
+            self.price_prediction = current_prices
+        else:
+            window_history = X.iloc[-self.window :]
+            self.price_prediction = self.get_price_prediction(current_prices, window_history)
+            
+        new_weights = self.update_weights(old_weights, self.price_prediction)
+
+        self.current_weights = new_weights
+
+        assert np.isclose(self.current_weights.sum(), 1), "The array does not sum up to one."
+
+        # Use the last portfolio as the new action (keep it the same)
+        action_weights = np.insert(new_weights, 0, 0)
+        actions = action_weights.reshape(1, self.portfolio_length)
+
+        return actions, None
+    
+def norm(x):
+    if isinstance(x, pd.Series):
+        axis = 0
+    else:
+        axis = 1
+    return np.sqrt((x ** 2).sum(axis=axis))
+
 # TODO found this here:  https://github.com/Marigold/universal-portfolios/blob/master/universal/tools.py
 def simplex_proj(y):
     """Projection of y onto simplex."""
