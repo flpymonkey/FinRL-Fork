@@ -15,8 +15,6 @@ class CRPModel:
             ) -> None:
         
         # Super simple algorithm, we only need the environment
-        # This environment needs to have prices for the CRP algorithm TODO check the type here
-
         assert env is not None 
         self.env = env
 
@@ -37,13 +35,13 @@ class CRPModel:
             self.target_weights = np.array(target_weights)
 
     def train(self) -> None:
-        # TODO this model is derministic and doesnt learn anything, it only predicts
+        # This model is derministic and doesnt learn anything, it only predicts
         pass
 
     def learn(
         self
     ):
-        # TODO this model is derministic and doesnt learn anything, it only predicts
+        # This model is derministic and doesnt learn anything, it only predicts
         pass
 
     def predict(
@@ -51,10 +49,11 @@ class CRPModel:
         observation: Union[np.ndarray, Dict[str, np.ndarray]],
         state: Optional[Tuple[np.ndarray, ...]] = None,
         episode_start: Optional[np.ndarray] = None,
-        deterministic: bool = False, # TODO not needed this is always determininistic
+        deterministic: bool = False, # This is always determininistic
     ) -> Tuple[np.ndarray, Optional[Tuple[np.ndarray, ...]]]:
 
-        # TODO much of this comes from the policies class in stable baselines
+        # This comes from the policies class in stable baselines.
+        # Use this to validate the environment.
         if isinstance(observation, tuple) and len(observation) == 2 and isinstance(observation[1], dict):
             raise ValueError(
                 "You have passed a tuple to the predict() function instead of a Numpy array or a Dict. "
@@ -83,7 +82,6 @@ class BAHModel:
             ) -> None:
         
         # Super simple algorithm, we only need the environment
-        # This environment needs to have prices for the BAH algorithm TODO check the type here
 
         assert env is not None 
         self.env = env
@@ -107,13 +105,13 @@ class BAHModel:
             self.target_weights = np.array(target_weights)
 
     def train(self) -> None:
-        # TODO this model is derministic and doesnt learn anything, it only predicts
+        # This model is derministic and doesnt learn anything, it only predicts
         pass
 
     def learn(
         self
     ):
-        # TODO this model is derministic and doesnt learn anything, it only predicts
+        # This model is derministic and doesnt learn anything, it only predicts
         pass
 
     def predict(
@@ -121,10 +119,11 @@ class BAHModel:
         observation: Union[np.ndarray, Dict[str, np.ndarray]],
         state: Optional[Tuple[np.ndarray, ...]] = None,
         episode_start: Optional[np.ndarray] = None,
-        deterministic: bool = False, # TODO not needed this is always determininistic
+        deterministic: bool = False, # This is always determininistic
     ) -> Tuple[np.ndarray, Optional[Tuple[np.ndarray, ...]]]:
 
-        # TODO much of this comes from the policies class in stable baselines
+        # This comes from the policies class in stable baselines.
+        # Use this to validate the environment.
         if isinstance(observation, tuple) and len(observation) == 2 and isinstance(observation[1], dict):
             raise ValueError(
                 "You have passed a tuple to the predict() function instead of a Numpy array or a Dict. "
@@ -159,7 +158,6 @@ class BCRPModel:
             ) -> None:
         
         # Super simple algorithm, we only need the environment
-        # This environment needs to have prices for the BCRP algorithm TODO check the type here
 
         assert env is not None 
         self.env = env
@@ -185,13 +183,13 @@ class BCRPModel:
         self.target_weights = np.insert(self.target_weights, 0, 0)
 
     def train(self) -> None:
-        # TODO this model is derministic and doesnt learn anything, it only predicts
+        # This model is derministic and doesnt learn anything, it only predicts
         pass
 
     def learn(
         self
     ):
-        # TODO this model is derministic and doesnt learn anything, it only predicts
+        # This model is derministic and doesnt learn anything, it only predicts
         pass
 
     def predict(
@@ -199,10 +197,11 @@ class BCRPModel:
         observation: Union[np.ndarray, Dict[str, np.ndarray]],
         state: Optional[Tuple[np.ndarray, ...]] = None,
         episode_start: Optional[np.ndarray] = None,
-        deterministic: bool = False, # TODO not needed this is always determininistic
+        deterministic: bool = False, # This is always determininistic
     ) -> Tuple[np.ndarray, Optional[Tuple[np.ndarray, ...]]]:
 
-        # TODO much of this comes from the policies class in stable baselines
+        # This comes from the policies class in stable baselines.
+        # Use this to validate the environment.
         if isinstance(observation, tuple) and len(observation) == 2 and isinstance(observation[1], dict):
             raise ValueError(
                 "You have passed a tuple to the predict() function instead of a Numpy array or a Dict. "
@@ -218,10 +217,6 @@ class BCRPModel:
         # The state doesnt matter here
         return actions, None
 
-# TODO - momentum type strategies
-
-# TODO - look into regret minimuzation
-
 class OLMARModel:
     def __init__(
             self, 
@@ -235,7 +230,6 @@ class OLMARModel:
             ) -> None:
         
         # Super simple algorithm, we only need the environment
-        # This environment needs to have prices for the OLMAR algorithm TODO check the type here
 
         assert env is not None 
         self.env = env
@@ -256,13 +250,13 @@ class OLMARModel:
         self.price_history = pd.DataFrame()
 
     def train(self) -> None:
-        # TODO this model is derministic and doesnt learn anything, it only predicts
+        # This model is derministic and doesnt learn anything, it only predicts
         pass
 
     def learn(
         self
     ):
-        # TODO this model is derministic and doesnt learn anything, it only predicts
+        # This model is derministic and doesnt learn anything, it only predicts
         pass
 
     def get_SMA(self, window_history):
@@ -284,17 +278,17 @@ class OLMARModel:
         weights = weights + lam * (excess_return)
 
         # project it onto simplex
-        return simplex_proj(weights)
+        return simplex_projection(weights)
 
-# TODO update this code
     def predict(self,
         observation: Union[np.ndarray, Dict[str, np.ndarray]],
         state: Optional[Tuple[np.ndarray, ...]] = None,
         episode_start: Optional[np.ndarray] = None,
-        deterministic: bool = False, # TODO not needed this is always determininistic
+        deterministic: bool = False, # This is always determininistic
     ) -> Tuple[np.ndarray, Optional[Tuple[np.ndarray, ...]]]:
 
-        # TODO much of this comes from the policies class in stable baselines
+        # This comes from the policies class in stable baselines.
+        # Use this to validate the environment.
         if isinstance(observation, tuple) and len(observation) == 2 and isinstance(observation[1], dict):
             raise ValueError(
                 "You have passed a tuple to the predict() function instead of a Numpy array or a Dict. "
@@ -307,7 +301,7 @@ class OLMARModel:
         # Reshape the array to remove single dimensions 
         reshaped_array = observation.reshape(len(self.env._features), self.portfolio_length - 1) 
 
-        # TODO this code his horrible Extract the three lists
+        # TODO this code is horrible 
         prices = reshaped_array[0].tolist()
 
         new_row = pd.DataFrame([prices])
@@ -317,17 +311,17 @@ class OLMARModel:
         old_weights = self.current_weights
 
         # Normalize the prices
-        r = {}
-        for name, s in self.price_history.items():
-            init_val = s.loc[s.first_valid_index()]
-            r[name] = s / init_val
-        X = pd.DataFrame(r)
+        normals = {}
+        for col, close_prices in self.price_history.items():
+            init_val = close_prices.loc[close_prices.first_valid_index()]
+            normals[col] = close_prices / init_val
+        price_relatives = pd.DataFrame(normals)
 
         # Window is too short, return the starting weights
-        if len(X) < self.window + 1:
-            self.price_prediction = X.iloc[-1]
+        if len(price_relatives) < self.window + 1:
+            self.price_prediction = price_relatives.iloc[-1]
         else:
-            window_history = X.iloc[-self.window :]
+            window_history = price_relatives.iloc[-self.window :]
             self.price_prediction = self.get_SMA(window_history)
             
         new_weights = self.update_weights(old_weights, self.price_prediction)
@@ -378,24 +372,26 @@ class RMRModel:
         self.price_history = pd.DataFrame()
 
     def train(self) -> None:
-        # TODO this model is derministic and doesnt learn anything, it only predicts
+        # This model is derministic and doesnt learn anything, it only predicts
         pass
 
     def learn(
         self
     ):
-        # TODO this model is derministic and doesnt learn anything, it only predicts
+        # This model is derministic and doesnt learn anything, it only predicts
         pass
 
     def get_price_prediction(self, prices, window_history):
         """Predict next price relative using SMA."""
-        y = window_history.mean()
-        y_last = None
-        while y_last is None or norm(y - y_last) / norm(y_last) > self.tau:
-            y_last = y
-            d = norm(window_history - y)
-            y = window_history.div(d, axis=0).sum() / (1.0 / d).sum()
-        return y / prices
+        mean_prices = window_history.mean()
+        prev_mean_prices = None
+        adjust_prices = False
+        while prev_mean_prices is None or adjust_prices:
+            prev_mean_prices = mean_prices
+            norm = calculate_l1_norm(window_history - mean_prices)
+            mean_prices = window_history.div(norm, axis=0).sum() / (1.0 / norm).sum()
+            adjust_prices = calculate_l1_norm(mean_prices - prev_mean_prices) / calculate_l1_norm(prev_mean_prices) > self.tau
+        return mean_prices / prices
         
     def update_weights(self, weights, new_price_prediction):
         """Update portfolio weights to satisfy constraint weights * x >= eps
@@ -412,9 +408,8 @@ class RMRModel:
         weights = weights + lam * (excess_return)
 
         # project it onto simplex
-        return simplex_proj(weights)
+        return simplex_projection(weights)
 
-# TODO update this code
     def predict(self,
         observation: Union[np.ndarray, Dict[str, np.ndarray]],
         state: Optional[Tuple[np.ndarray, ...]] = None,
@@ -435,7 +430,7 @@ class RMRModel:
         # Reshape the array to remove single dimensions 
         reshaped_array = observation.reshape(len(self.env._features), self.portfolio_length - 1) 
 
-        # TODO this code his horrible Extract the three lists
+        # TODO this code his horrible
         prices = reshaped_array[0].tolist()
 
         new_row = pd.DataFrame([prices])
@@ -445,19 +440,19 @@ class RMRModel:
         old_weights = self.current_weights
 
         # Normalize the prices
-        r = {}
-        for name, s in self.price_history.items():
-            init_val = s.loc[s.first_valid_index()]
-            r[name] = s / init_val
-        X = pd.DataFrame(r)
+        normals = {}
+        for col, close_prices in self.price_history.items():
+            init_val = close_prices.loc[close_prices.first_valid_index()]
+            normals[col] = close_prices / init_val
+        price_relatives = pd.DataFrame(normals)
 
-        current_prices = X.iloc[-1]
+        current_prices = price_relatives.iloc[-1]
 
         # Window is too short, return the starting weights
-        if len(X) < self.window + 1:
+        if len(price_relatives) < self.window + 1:
             self.price_prediction = current_prices
         else:
-            window_history = X.iloc[-self.window :]
+            window_history = price_relatives.iloc[-self.window :]
             self.price_prediction = self.get_price_prediction(current_prices, window_history)
             
         new_weights = self.update_weights(old_weights, self.price_prediction)
@@ -471,34 +466,35 @@ class RMRModel:
         actions = action_weights.reshape(1, self.portfolio_length)
 
         return actions, None
-    
-def norm(x):
-    if isinstance(x, pd.Series):
+
+# TODO found this here:  https://github.com/Marigold/universal-portfolios/blob/master/universal/tools.py
+def calculate_l1_norm(price):
+    if isinstance(price, pd.Series):
         axis = 0
     else:
         axis = 1
-    return np.sqrt((x ** 2).sum(axis=axis))
+    return np.sqrt((price ** 2).sum(axis=axis))
 
 # TODO found this here:  https://github.com/Marigold/universal-portfolios/blob/master/universal/tools.py
-def simplex_proj(y):
-    """Projection of y onto simplex."""
-    m = len(y)
-    bget = False
+def simplex_projection(weights):
+    """Projection of weights onto simplex."""
+    weight_length = len(weights)
+    found = False
 
-    s = sorted(y, reverse=True)
-    tmpsum = 0.0
+    sorted_weights = sorted(weights, reverse=True)
+    running_sum = 0.0
 
-    for ii in range(m - 1):
-        tmpsum = tmpsum + s[ii]
-        tmax = (tmpsum - 1) / (ii + 1)
-        if tmax >= s[ii + 1]:
-            bget = True
+    for weight_i in range(weight_length - 1):
+        running_sum = running_sum + sorted_weights[weight_i]
+        threshhold_max = (running_sum - 1) / (weight_i + 1)
+        if threshhold_max >= sorted_weights[weight_i + 1]:
+            found = True
             break
 
-    if not bget:
-        tmax = (tmpsum + s[m - 1] - 1) / m
+    if not found:
+        threshhold_max = (running_sum + sorted_weights[weight_length - 1] - 1) / weight_length
 
-    return np.maximum(y - tmax, 0.0)   
+    return np.maximum(weights - threshhold_max, 0.0)   
 
 
 import scipy.optimize as optimize
