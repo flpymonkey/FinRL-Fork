@@ -1,9 +1,10 @@
-from stable_baselines3 import PPO
+from stable_baselines3 import PPO, A2C
 
 from .online import CRPModel, BAHModel, BCRPModel, OLMARModel, RMRModel
 
 MODELS = {
     "ppo": PPO, 
+    "a2c": A2C, 
     "crp": CRPModel, 
     "bah": BAHModel, 
     "bcrp": BCRPModel, 
