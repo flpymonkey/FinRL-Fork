@@ -178,7 +178,7 @@ class BCRPModel:
         # Calculate price ratios 
         price_ratios = pivoted_df / pivoted_df.iloc[0]
         # Get the magic weights
-        self.target_weights = np.array(optimize_with_hindsight(price_ratios))
+        self.target_weights = np.array(optimize_returns(price_ratios))
         # Assume no cash
         self.target_weights = np.insert(self.target_weights, 0, 0)
 
@@ -448,7 +448,7 @@ class RMRModel:
 
         current_prices = price_relatives.iloc[-1]
 
-        # Window is too short, return the starting weights
+        # Window is too short, just use last price
         if len(price_relatives) < self.window + 1:
             self.price_prediction = current_prices
         else:
@@ -463,6 +463,125 @@ class RMRModel:
 
         # Use the last portfolio as the new action (keep it the same)
         action_weights = np.insert(new_weights, 0, 0)
+        actions = action_weights.reshape(1, self.portfolio_length)
+
+        return actions, None
+    
+class BNNModel:
+    def __init__(
+            self, 
+            env: Union[GymEnv, str],
+            policy: Any, # Policy doesnt matter here
+            device: str, # device doesnt matter here
+            policy_kwargs: Optional[Dict[str, Any]] = None, # policy_kwargs doesnt matter here
+            target_weights: List[float] = None, # If none, default to uniform weights
+            k=5, 
+            l=10
+            ) -> None:
+        
+        # Super simple algorithm, we only need the environment
+
+        assert env is not None 
+        self.env = env
+
+        self.k = k
+        self.l = l
+
+        self.min_history= k + l - 1
+
+        # Pull out the actions space dimensions for the portfolio
+        self.action_space_shape = self.env.action_space.shape
+        self.portfolio_length = self.action_space_shape[0]
+
+        # Calculate the inital weights, here we set all weights to zero to start
+        # Then we put all value in the cash account
+
+        # Note these are the first weight reprsents the cash account, which should always be 0
+        self.current_weights = np.zeros(self.portfolio_length-1)   # target weights for each asset
+
+        self.price_history = pd.DataFrame()
+
+    def find_nn(self, H):
+        """Note that nearest neighbors are calculated in a different (more efficient) way than shown
+        in the article.
+
+        param H: history
+        """
+        # calculate distance from current sequence to every other point
+        D = H * 0
+        for i in range(1, self.k + 1):
+            D += (H.shift(i - 1) - H.iloc[-i]) ** 2
+        D = D.sum(1).iloc[:-1]
+
+        # sort and find nearest neighbors
+        D = D.sort_values()
+        return D.index[:self.l]
+
+
+    def train(self) -> None:
+        # This model is derministic and doesnt learn anything, it only predicts
+        pass
+
+    def learn(
+        self
+    ):
+        # This model is derministic and doesnt learn anything, it only predicts
+        pass
+
+# TODO update this code
+    def predict(self,
+        observation: Union[np.ndarray, Dict[str, np.ndarray]],
+        state: Optional[Tuple[np.ndarray, ...]] = None,
+        episode_start: Optional[np.ndarray] = None,
+        deterministic: bool = False, # TODO not needed this is always determininistic
+    ) -> Tuple[np.ndarray, Optional[Tuple[np.ndarray, ...]]]:
+
+        # TODO much of this comes from the policies class in stable baselines
+        if isinstance(observation, tuple) and len(observation) == 2 and isinstance(observation[1], dict):
+            raise ValueError(
+                "You have passed a tuple to the predict() function instead of a Numpy array or a Dict. "
+                "You are probably mixing Gym API with SB3 VecEnv API: `obs, info = env.reset()` (Gym) "
+                "vs `obs = vec_env.reset()` (SB3 VecEnv). "
+                "See related issue https://github.com/DLR-RM/stable-baselines3/issues/1694 "
+                "and documentation for more information: https://stable-baselines3.readthedocs.io/en/master/guide/vec_envs.html#vecenv-api-vs-gym-api"
+            )
+
+        # Reshape the array to remove single dimensions 
+        reshaped_array = observation.reshape(len(self.env._features), self.portfolio_length - 1) 
+
+        # TODO this code his horrible Extract the three lists
+        prices = reshaped_array[0].tolist()
+
+        new_row = pd.DataFrame([prices])
+
+        # Add to the price history
+        self.price_history = pd.concat([self.price_history, new_row], ignore_index=True)
+        old_weights = self.current_weights
+
+        # Normalize the prices
+        r = {}
+        for name, s in self.price_history.items():
+            init_val = s.loc[s.first_valid_index()]
+            r[name] = s / init_val
+        X = pd.DataFrame(r)
+
+        # Window is too short, use cash only
+        if len(X) < self.min_history + 1:
+            weights = self.current_weights
+            action_weights = np.insert(weights, 0, 1)
+            actions = action_weights.reshape(1, self.portfolio_length)
+            return actions, None
+        
+        ixs = self.find_nn(X)
+
+        J = X.iloc[[X.index.get_loc(i) + 1 for i in ixs]]
+        
+        self.current_weights = np.array(optimize_returns(J))
+
+        assert np.isclose(self.current_weights.sum(), 1), "The array does not sum up to one."
+
+        # Use the last portfolio as the new action (keep it the same)
+        action_weights = np.insert(self.current_weights, 0, 0)
         actions = action_weights.reshape(1, self.portfolio_length)
 
         return actions, None
@@ -499,13 +618,14 @@ def simplex_projection(weights):
 
 import scipy.optimize as optimize
 # TODO found this here:  https://github.com/Marigold/universal-portfolios/blob/master/universal/tools.py
-def optimize_with_hindsight(
+def optimize_returns(
     prices
 ):
     assert prices.notnull().all().all()
 
     x_0 = np.ones(prices.shape[1]) / float(prices.shape[1])
     
+    # Using price returns here.
     objective = lambda b: -np.sum(np.log(np.maximum(np.dot(prices - 1, b) + 1, 0.0001)))
 
     cons = ({"type": "eq", "fun": lambda b: 1 - sum(b)},)

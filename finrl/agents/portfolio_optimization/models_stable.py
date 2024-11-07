@@ -1,6 +1,6 @@
 from stable_baselines3 import PPO, A2C
 
-from .online import CRPModel, BAHModel, BCRPModel, OLMARModel, RMRModel
+from .online import CRPModel, BAHModel, BCRPModel, OLMARModel, RMRModel, BNNModel
 
 MODELS = {
     "ppo": PPO, 
@@ -9,7 +9,8 @@ MODELS = {
     "bah": BAHModel, 
     "bcrp": BCRPModel, 
     "olmar": OLMARModel,
-    "rmr": RMRModel
+    "rmr": RMRModel,
+    "bnn": BNNModel
 }
 
 class DRLStableAgent:
