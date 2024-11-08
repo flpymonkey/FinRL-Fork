@@ -86,12 +86,12 @@ class DRLStableAgent:
         print("Max number of time steps in an episode: ", max_steps)
 
         model.learn(
-            total_timesteps = max_steps * episodes # TODO fix this
+            total_timesteps = max_steps * episodes
         )
         return model
 
     @staticmethod
-    def DRL_prediction(model, env, deterministic=True):
+    def DRL_prediction(model, env, deterministic=True, verbose=False):
         """make a prediction and get results"""
         test_env, test_obs = env.get_sb_env()
         
@@ -105,6 +105,14 @@ class DRLStableAgent:
 
         for i in range(max_steps):
             action, _states = model.predict(test_obs, deterministic=deterministic)
+
+            if(verbose):
+                print("Step: ", str(i))
+                print("Observations: ")
+                print(test_obs)
+                print("Actions: ")
+                print(action)
+
 
             # Pull out the latest assets and dates
             validation_assets = env._asset_memory["final"]
