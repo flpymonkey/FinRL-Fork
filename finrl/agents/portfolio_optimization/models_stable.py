@@ -103,7 +103,7 @@ class DRLStableAgent:
         return model(env=self.env, policy="MlpPolicy", **model_kwargs)
 
     @staticmethod
-    def train_model(model, env, episodes=1):
+    def train_model(model, env, tb_log_name=None, episodes=1):
         """Trains portfolio optimization model.
 
         Args:
@@ -119,7 +119,9 @@ class DRLStableAgent:
 
         model.learn(
             total_timesteps = max_steps * episodes,
-            callback=TensorboardCallback()
+            callback=TensorboardCallback(),
+            tb_log_name=tb_log_name,
+            progress_bar=True
         )
         return model
 
