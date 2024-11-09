@@ -2,6 +2,9 @@ from stable_baselines3 import PPO, A2C
 
 from .online import CRPModel, BAHModel, BCRPModel, OLMARModel, RMRModel, BNNModel
 
+from stable_baselines3.common.callbacks import BaseCallback
+
+
 MODELS = {
     "ppo": PPO, 
     "a2c": A2C, 
@@ -12,6 +15,35 @@ MODELS = {
     "rmr": RMRModel,
     "bnn": BNNModel
 }
+
+class TensorboardCallback(BaseCallback):
+    """
+    Custom callback for plotting additional values in tensorboard.
+    """
+
+    def __init__(self, verbose=0):
+        super().__init__(verbose)
+
+    def _on_step(self) -> bool:
+        try:
+            self.logger.record(key="train/reward", value=self.locals["rewards"][0])
+
+            state = self.locals['obs']
+            action = self.locals['actions']
+            print(f"State: {state}, Action: {action}")
+            return True
+
+        except BaseException as error:
+            try:
+                self.logger.record(key="train/reward", value=self.locals["reward"][0])
+
+            except BaseException as inner_error:
+                # Handle the case where neither "rewards" nor "reward" is found
+                self.logger.record(key="train/reward", value=None)
+                # Print the original error and the inner error for debugging
+                # print("Original Error:", error)
+                # print("Inner Error:", inner_error)
+        return True
 
 class DRLStableAgent:
     """Implementation for DRL algorithms for portfolio optimization.
@@ -86,7 +118,8 @@ class DRLStableAgent:
         print("Max number of time steps in an episode: ", max_steps)
 
         model.learn(
-            total_timesteps = max_steps * episodes
+            total_timesteps = max_steps * episodes,
+            callback=TensorboardCallback()
         )
         return model
 
@@ -112,7 +145,6 @@ class DRLStableAgent:
                 print(test_obs)
                 print("Actions: ")
                 print(action)
-
 
             # Pull out the latest assets and dates
             validation_assets = env._asset_memory["final"]
