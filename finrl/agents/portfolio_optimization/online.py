@@ -381,8 +381,9 @@ class RMRModel:
         # This model is derministic and doesnt learn anything, it only predicts
         pass
 
-    def get_price_prediction(self, prices, window_history):
-        """Predict next price relative using SMA."""
+    # TODO update this to chang evariables, check that this is valid
+    def get_price_prediction(self, window_history):
+        """Predict next price relative using L1 norm."""
         mean_prices = window_history.mean()
         prev_mean_prices = None
         adjust_prices = False
@@ -391,7 +392,7 @@ class RMRModel:
             norm = calculate_l1_norm(window_history - mean_prices)
             mean_prices = window_history.div(norm, axis=0).sum() / (1.0 / norm).sum()
             adjust_prices = calculate_l1_norm(mean_prices - prev_mean_prices) / calculate_l1_norm(prev_mean_prices) > self.tau
-        return mean_prices / prices
+        return mean_prices
         
     def update_weights(self, weights, new_price_prediction):
         """Update portfolio weights to satisfy constraint weights * x >= eps
@@ -453,7 +454,7 @@ class RMRModel:
             self.price_prediction = current_prices
         else:
             window_history = price_relatives.iloc[-self.window :]
-            self.price_prediction = self.get_price_prediction(current_prices, window_history)
+            self.price_prediction = self.get_price_prediction(window_history)
             
         new_weights = self.update_weights(old_weights, self.price_prediction)
 
@@ -501,6 +502,7 @@ class BNNModel:
 
         self.price_history = pd.DataFrame()
 
+    # TODO update this to chang evariables 
     def find_nn(self, H):
         """Note that nearest neighbors are calculated in a different (more efficient) way than shown
         in the article.
@@ -587,12 +589,16 @@ class BNNModel:
         return actions, None
 
 # TODO found this here:  https://github.com/Marigold/universal-portfolios/blob/master/universal/tools.py
-def calculate_l1_norm(price):
-    if isinstance(price, pd.Series):
+def calculate_l1_norm(prices):
+    # Determine the axis along which to calculate the norm
+    if isinstance(prices, pd.Series):
         axis = 0
     else:
         axis = 1
-    return np.sqrt((price ** 2).sum(axis=axis))
+    
+    # Calculate the L1 norm
+    return np.abs(prices).sum(axis=axis)
+
 
 # TODO found this here:  https://github.com/Marigold/universal-portfolios/blob/master/universal/tools.py
 def simplex_projection(weights):
