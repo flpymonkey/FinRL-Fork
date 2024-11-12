@@ -476,8 +476,8 @@ class BNNModel:
             device: str, # device doesnt matter here
             policy_kwargs: Optional[Dict[str, Any]] = None, # policy_kwargs doesnt matter here
             target_weights: List[float] = None, # If none, default to uniform weights
-            k=5, 
-            l=10
+            window=5, # Sequence length
+            neighbors=10 # Number of neighbors
             ) -> None:
         
         # Super simple algorithm, we only need the environment
@@ -485,10 +485,10 @@ class BNNModel:
         assert env is not None 
         self.env = env
 
-        self.k = k
-        self.l = l
+        self.window = window
+        self.neighbors = neighbors
 
-        self.min_history= k + l - 1
+        self.min_history= window + neighbors - 1
 
         # Pull out the actions space dimensions for the portfolio
         self.action_space_shape = self.env.action_space.shape
@@ -502,22 +502,26 @@ class BNNModel:
 
         self.price_history = pd.DataFrame()
 
-    # TODO update this to chang evariables 
-    def find_nn(self, H):
-        """Note that nearest neighbors are calculated in a different (more efficient) way than shown
-        in the article.
-
-        param H: history
+    def find_neighbors(self, price_history):
         """
-        # calculate distance from current sequence to every other point
-        D = H * 0
-        for i in range(1, self.k + 1):
-            D += (H.shift(i - 1) - H.iloc[-i]) ** 2
-        D = D.sum(1).iloc[:-1]
+        Based on the implementation here: 
+        https://github.com/Marigold/universal-portfolios/blob/master/universal/algos/bnn.py
+        """
+        # find the distance from the last row to every other row in the window
+        distances = price_history * 0
+        for i in range(1, self.window + 1):
+            lagged_prices = price_history.shift(i - 1)
+            last_prices = price_history.iloc[-i]
+            distances += (lagged_prices - last_prices) ** 2
 
-        # sort and find nearest neighbors
-        D = D.sort_values()
-        return D.index[:self.l]
+        # Calculate the distance from every time-step to the last point (excluding the last time-step)
+        distances = distances.sum(1).iloc[:-1]
+
+        distances = distances[distances != 0]
+
+        # sort the list and return the nearest (minimum distances)
+        distances = distances.sort_values()
+        return distances.index[:self.neighbors]
 
 
     def train(self) -> None:
@@ -558,27 +562,27 @@ class BNNModel:
 
         # Add to the price history
         self.price_history = pd.concat([self.price_history, new_row], ignore_index=True)
-        old_weights = self.current_weights
 
         # Normalize the prices
         r = {}
         for name, s in self.price_history.items():
             init_val = s.loc[s.first_valid_index()]
             r[name] = s / init_val
-        X = pd.DataFrame(r)
+        price_history = pd.DataFrame(r)
 
         # Window is too short, use cash only
-        if len(X) < self.min_history + 1:
+        if len(price_history) < self.min_history + 1:
             weights = self.current_weights
             action_weights = np.insert(weights, 0, 1)
             actions = action_weights.reshape(1, self.portfolio_length)
             return actions, None
         
-        ixs = self.find_nn(X)
+        neighbor_prices = self.find_neighbors(price_history)
 
-        J = X.iloc[[X.index.get_loc(i) + 1 for i in ixs]]
+        neighbor_history = price_history.iloc[[price_history.index.get_loc(i) + 1 for i in neighbor_prices]]
         
-        self.current_weights = np.array(optimize_returns(J))
+        # Find the optimal portfolio over the nearest neighbor price history
+        self.current_weights = np.array(optimize_returns(neighbor_history))
 
         assert np.isclose(self.current_weights.sum(), 1), "The array does not sum up to one."
 
@@ -636,7 +640,6 @@ def optimize_returns(
 
     cons = ({"type": "eq", "fun": lambda b: 1 - sum(b)},)
 
-   
     # problem optimization
     res = optimize.minimize(
         objective,
