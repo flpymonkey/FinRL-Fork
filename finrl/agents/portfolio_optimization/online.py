@@ -178,7 +178,7 @@ class BCRPModel:
         # Calculate price ratios 
         price_ratios = pivoted_df / pivoted_df.iloc[0]
         # Get the magic weights
-        self.target_weights = np.array(optimize_returns(price_ratios))
+        self.target_weights = np.array(optimize_log_returns(price_ratios))
         # Assume no cash
         self.target_weights = np.insert(self.target_weights, 0, 0)
 
@@ -517,6 +517,7 @@ class BNNModel:
         # Calculate the distance from every time-step to the last point (excluding the last time-step)
         distances = distances.sum(1).iloc[:-1]
 
+        # Drop the zero rows from sorting.
         distances = distances[distances != 0]
 
         # sort the list and return the nearest (minimum distances)
@@ -577,12 +578,12 @@ class BNNModel:
             actions = action_weights.reshape(1, self.portfolio_length)
             return actions, None
         
-        neighbor_prices = self.find_neighbors(price_history)
+        neighbor_indexes = self.find_neighbors(price_history)
 
-        neighbor_history = price_history.iloc[[price_history.index.get_loc(i) + 1 for i in neighbor_prices]]
+        neighbor_history = price_history.iloc[[price_history.index.get_loc(i) + 1 for i in neighbor_indexes]]
         
         # Find the optimal portfolio over the nearest neighbor price history
-        self.current_weights = np.array(optimize_returns(neighbor_history))
+        self.current_weights = np.array(optimize_log_returns(neighbor_history))
 
         assert np.isclose(self.current_weights.sum(), 1), "The array does not sum up to one."
 
@@ -628,7 +629,7 @@ def simplex_projection(weights):
 
 import scipy.optimize as optimize
 # TODO found this here:  https://github.com/Marigold/universal-portfolios/blob/master/universal/tools.py
-def optimize_returns(
+def optimize_log_returns(
     prices
 ):
     assert prices.notnull().all().all()
